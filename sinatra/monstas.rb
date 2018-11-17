@@ -2,67 +2,15 @@ require "sinatra"
 require "erb"
 enable :sessions
 
-#get "/" do
-#  "OMG, hello Ruby Monstas!"
-#end
-
-#get "/monstas/:name" do
-#  "Hello #{params["name"]}!"
-#end
-
-#get "/monstas/:name" do
-#  params.inspect
-#end
-
-#get '/monstas/:name' do
-#  ERB.new("<h1>Hello <%= params[:name] %></h1>").result(binding)
-#end
-
-#get '/monstas/:name' do
-#  erb "<h1>Hello <%= name %></h1>", { :locals => { :name => params[:name] } }
-#end
-
-#get '/monstas/:name' do
-#  erb "<h1>Hello <%= name %></h1>", { :locals => params }
-#end
-
-#get '/monstas/:name' do
-#  template = "<h1>Hello <%= name %></h1>"
-#  layout   = "<html><body><%= yield %></body></html>"
-#  erb template, { :locals => params, :layout => layout }
-#end
-
-#get '/monstas/:name' do
-#  erb :monstas, { :locals => params, :layout => :layout }
-#end
-
-#get '/monstas/:name' do
-#  erb :monstas, { :locals => params, :layout => true }
-#end
-
-#get '/monstas/:name' do
-#  erb :monstas, { :locals => params }
-#end
-def store_name(filename, string)
-  File.open(filename, "a+") do |file|
-    file.puts(string)
-  end
+get "/" do
+  "Shu's Sinatra Spot!!!!"
 end
 
-get "/monstas/:name" do
+get '/monstas/:name' do
   @message = session.delete(:message)
   @name = params["name"]
-  #p params
   @names = read_names
-  store_name("names.txt", @name)
   erb :monstas
-end
-
-post "/monstas" do
-  @name = params["name"]
-  store_name("names.txt", @name)
-  session[:message] = "Successfully stored the name #{@name}."
-  redirect "/monstas?name=#{@name}"
 end
 
 def read_names
@@ -70,7 +18,49 @@ def read_names
   File.read("names.txt").split("\n")
 end
 
-# This snippet doesn't seem to work!
-#get '/monstas/' do
-#  erb :monstas
-#end
+class NameValidator
+  def initialize(name, names)
+    @name = name.to_s
+    @names = names
+  end
+
+  def valid?
+    validate
+    @message.nil?
+  end
+
+  def message
+    @message
+  end
+
+  private
+
+    def validate
+      if @name.empty?
+        @message = "You need to enter a name."
+      elsif @names.include?(@name)
+        @message = "#{@name} is already included in our list."
+      end
+    end
+end
+
+post '/monstas/:name' do
+  @name = params["name"]
+  @names = read_names
+  validator = NameValidator.new(@name, @names)
+    
+  if validator.valid?
+    store_name("names.txt", @name)
+    session[:message] = "Successfully stored the name #{@name}."
+    redirect "/monstas/monstas?name=#{@name}"
+  else
+    session[:message] = validator.message
+    erb :monstas
+  end
+end
+
+def store_name(filename, string)
+  File.open(filename, "a+") do |file|
+    file.puts(string)
+  end
+end
